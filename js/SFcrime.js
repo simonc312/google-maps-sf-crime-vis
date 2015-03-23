@@ -25,11 +25,11 @@
           new google.maps.LatLng(37.590059187414685, -122.63448208007815),
           new google.maps.LatLng(37.80174049420249, -122.3091720214844)
       );
-      var marker_icons = [ {'name': "STOLEN VEHICLE", 'icon': '../../assets/sf_crime_icons/car.png', 'inactive_icon':'../../assets/sf_crime_icons/car-inactive.png'},
-                           {'name': "ATTEMPTED STOLEN VEHICLE", 'icon': '../../assets/sf_crime_icons/car-attempted.png', 'inactive_icon':'../../assets/sf_crime_icons/car-inactive.png'},
-                           {'name': "STOLEN AND RECOVERED VEHICLE", 'icon':  '../../assets/sf_crime_icons/car-recovered.png', 'inactive_icon':'../../assets/sf_crime_icons/car-inactive.png'},
-                           {'name': "STOLEN MOTORCYCLE", 'icon': '../../assets/sf_crime_icons/motorcycle2.png', 'inactive_icon':'../../assets/sf_crime_icons/motorcycle-inactive.png'},
-                           {'name': "STOLEN TRUCK", 'icon': '../../assets/sf_crime_icons/truck2.png','inactive_icon':'../../assets/sf_crime_icons/truck-inactive.png'}]
+      var marker_icons = [ {'name': "STOLEN VEHICLE", 'icon': baseurl+'/assets/sf_crime_icons/car.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
+                           {'name': "ATTEMPTED STOLEN VEHICLE", 'icon': baseurl+'/assets/sf_crime_icons/car-attempted.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
+                           {'name': "STOLEN AND RECOVERED VEHICLE", 'icon':  baseurl+'/assets/sf_crime_icons/car-recovered.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
+                           {'name': "STOLEN MOTORCYCLE", 'icon': baseurl+'/assets/sf_crime_icons/motorcycle2.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/motorcycle-inactive.png'},
+                           {'name': "STOLEN TRUCK", 'icon': baseurl+'/assets/sf_crime_icons/truck2.png','inactive_icon':baseurl+'/assets/sf_crime_icons/truck-inactive.png'}]
       
       //only one infowindow needed to avoid clutter
       var infowindow = new google.maps.InfoWindow(
