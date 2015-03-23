@@ -4,6 +4,7 @@
       var DATE_DATA = {'DAY':0,'DATE':1,'TIME':2,'DESC':3,'ADDR':4,'ISAM':5};
       var DISTRICT_CIRCLE = {'COLOR': {'ON':'red','OFF':'transparent'},'OPACITY': {'ON':0.4,'OFF':0}};
       var LEVEL = {'DISTRICT':13,'HEAT_MAP':14,'UNIQUE_MARKER':15}
+      var baseurl = 'google-maps-sf-crime-vis';
       var vehicle_theft_data;
       var vehicle_theft_date_data;
       var vehicle_theft_district_data;
@@ -443,14 +444,14 @@
           vehicle_theft_data =  json;
         }),
         // Get the PdDistrict mean locations and numbers
-        $.getJSON("../../assets/vehicle.theft.location.json", function(json) {
+        $.getJSON(baseurl+"/assets/vehicle.theft.location.json", function(json) {
           vehicle_theft_district_data = json;
         }),
-        $.getJSON("../../assets/vehicle.theft.date.json", function(json) {
+        $.getJSON(baseurl+"/assets/vehicle.theft.date.json", function(json) {
           vehicle_theft_date_data = json;
         }),
         // Get text descriptions of districts and url links to read more
-        $.getJSON("../../assets/sf_district_bios.json", function(json) {
+        $.getJSON(baseurl+"/assets/sf_district_bios.json", function(json) {
           sf_district_bios = json;
         })
 
