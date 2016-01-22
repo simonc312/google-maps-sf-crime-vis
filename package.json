@@ -1,0 +1,31 @@
+{
+  "name": "google-maps-sf-crime-vis",
+  "version": "1.0.0",
+  "description": "visualization of dataset of vehichle thefts in sf 2014",
+  "main": "js/index.js",
+  "scripts": {
+    "test": "console.log('test')"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simonc312/google-maps-sf-crime-vis.git"
+  },
+  "keywords": [
+    "google-maps",
+    "rStudio"
+  ],
+  "author": "Simon Chen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/simonc312/google-maps-sf-crime-vis/issues"
+  },
+  "homepage": "https://github.com/simonc312/google-maps-sf-crime-vis#readme",
+  "devDependencies": {
+    "babel-preset-es2015": "^6.3.13",
+    "gulp": "^3.9.0",
+    "gulp-babel": "^6.1.1",
+    "gulp-concat": "^2.6.0",
+    "gulp-sourcemaps": "^1.6.0"
+  },
+  "dependencies": {}
+}
