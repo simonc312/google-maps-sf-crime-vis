@@ -46,7 +46,7 @@ var nightStyles = {
 var dayStyles = { styles: [{ "featureType": "water", "stylers": [{ "visibility": "on" }, { "color": "#acbcc9" }] }, { "featureType": "landscape", "stylers": [{ "color": "#f2e5d4" }] }, { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#c5c6c6" }] }, { "featureType": "road.arterial", "elementType": "geometry", "stylers": [{ "color": "#e4d7c6" }] }, { "featureType": "road.local", "elementType": "geometry", "stylers": [{ "color": "#fbfaf7" }] }, { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#c5dac6" }] }, { "featureType": "administrative", "stylers": [{ "visibility": "on" }, { "lightness": 33 }] }, { "featureType": "road" }, { "featureType": "poi.park", "elementType": "labels", "stylers": [{ "visibility": "on" }, { "lightness": 20 }] }, {}, { "featureType": "road", "stylers": [{ "lightness": 20 }] }]
 };
 
-function addDistrictData() {
+function addDistrictData(map) {
   $.each(vehicle_theft_district_data.PdDistrict, function (i, district) {
     var loc = new google.maps.LatLng(vehicle_theft_district_data.Y[i], vehicle_theft_district_data.X[i]);
     var magnitude = vehicle_theft_district_data.Total[i];
@@ -122,6 +122,7 @@ function addHeatMapData() {
 };
 
 function getDistrictBio(district) {
+  //apply array filter
   for (var i = 0; i < sf_district_bios.length; i++) {
     var district_obj = sf_district_bios[i];
     if (district_obj.district === district) {
@@ -141,13 +142,14 @@ function getDistrictBio(district) {
 }
 
 function getUniqueIcon(description) {
+  //apply array filter
   for (var i = 0; i < marker_icons.length; i++) {
     if (marker_icons[i].name === description) return marker_icons[i].icon;
   }
   return marker_icons[0].icon; //default stolen automobile icon
 }
 
-function addUniqueData() {
+function addUniqueData(map) {
   var normal_size = new google.maps.Size(28, 33);
   var scaled_size = new google.maps.Size(32, 37);
   var normal_anchor = new google.maps.Point(16, 33);
@@ -275,7 +277,7 @@ function toggleDistrictMarkers() {
   toggleMarkers(district_markers);
 }
 
-function centerChangedEventHandler() {
+function centerChangedEventHandler(map) {
   if (allowedBounds.contains(map.getCenter())) {
     // still within valid bounds, so save the last valid position
     lastValidCenter = map.getCenter();
@@ -285,7 +287,7 @@ function centerChangedEventHandler() {
   }
 }
 
-function zoomChangeEventHandler() {
+function zoomChangeEventHandler(map) {
   var zoomLevel = map.getZoom();
   var legend = $('#legend');
   $('#zoom_level').text('Zoom Level: ' + zoomLevel);
@@ -327,7 +329,7 @@ function setUpLegend() {
   container.innerHTML = "<div><h3>Interactive Legend</h3><div>";
   container.className = 'bio-window slide';
   container.id = 'inner_legend';
-  $.each(marker_icons, function (i, marker) {
+  marker_icons.forEach(function (marker, i) {
     var name = marker.name;
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
@@ -352,7 +354,7 @@ function setUpLegend() {
     $('#inner_legend').slideToggle("linear", updateArrow);
   });
 
-  $.each(marker_icons, function (i, marker) {
+  marker_icons.forEach(function (marker, i) {
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
     $('#legend-icon' + i).click(function (e) {
@@ -379,7 +381,6 @@ function initialize() {
     streetViewControl: false,
     mapTypeId: google.maps.MapTypeId.ROAD
   };
-
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('panel'));
   map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
@@ -387,8 +388,11 @@ function initialize() {
 
   $('#zoom_level').text('Zoom Level: ' + curZoomLevel);
   lastValidCenter = map.getCenter();
-  google.maps.event.addListener(map, 'center_changed', centerChangedEventHandler);
-  google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler);
+  google.maps.event.addListener(map, 'center_changed', function () {
+    centerChangedEventHandler(map);
+  });
+  google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler.bind(this, map));
+  return map;
 }
 
 $.when(
@@ -408,11 +412,11 @@ $.getJSON(baseurl + "/assets/sf_district_bios.json", function (json) {
 })).then(function () {
   //consider adding on fail or on progress function handling
   // All is ready now
-  initialize();
-  addDistrictData();
+  var map = initialize();
+  addDistrictData(map);
   initializeHeatMapArray();
   addHeatMapData();
   setUpLegend();
-  addUniqueData();
+  addUniqueData(map);
 });
 //# sourceMappingURL=all.js.map

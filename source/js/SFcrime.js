@@ -38,7 +38,7 @@
           });
 
       google.maps.InfoWindow.prototype.isOpen = function(){
-        var map = infowindow.getMap();
+        let map = infowindow.getMap();
         return (map !== null && typeof map !== "undefined");
       }
 
@@ -52,7 +52,7 @@
       var dayStyles = {styles: [{"featureType":"water","stylers":[{"visibility":"on"},{"color":"#acbcc9"}]},{"featureType":"landscape","stylers":[{"color":"#f2e5d4"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#c5c6c6"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#e4d7c6"}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#fbfaf7"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#c5dac6"}]},{"featureType":"administrative","stylers":[{"visibility":"on"},{"lightness":33}]},{"featureType":"road"},{"featureType":"poi.park","elementType":"labels","stylers":[{"visibility":"on"},{"lightness":20}]},{},{"featureType":"road","stylers":[{"lightness":20}]}]
       };
 
-      function addDistrictData(){
+      function addDistrictData(map){
         $.each( vehicle_theft_district_data.PdDistrict, function( i, district){
             var loc = new google.maps.LatLng(vehicle_theft_district_data.Y[i], vehicle_theft_district_data.X[i]);
             var magnitude = vehicle_theft_district_data.Total[i];
@@ -147,6 +147,7 @@
       };
 
       function getDistrictBio(district){
+        //apply array filter 
         for(var i=0;i<sf_district_bios.length;i++){
           var district_obj = sf_district_bios[i];
           if(district_obj.district === district){
@@ -168,6 +169,7 @@
       }
 
       function getUniqueIcon(description){
+        //apply array filter 
         for(var i=0; i<marker_icons.length;i++){
           if(marker_icons[i].name === description)
             return marker_icons[i].icon;
@@ -175,11 +177,11 @@
         return marker_icons[0].icon; //default stolen automobile icon
       }
 
-      function addUniqueData(){
-        var normal_size = new google.maps.Size(28, 33);
-        var scaled_size = new google.maps.Size(32,37);
-        var normal_anchor = new google.maps.Point(16, 33);
-        var scaled_anchor = new google.maps.Point(16, 37);
+      function addUniqueData(map){
+        let normal_size = new google.maps.Size(28, 33);
+        let scaled_size = new google.maps.Size(32,37);
+        let normal_anchor = new google.maps.Point(16, 33);
+        let scaled_anchor = new google.maps.Point(16, 37);
 
         var updateIcon = function(marker,icon,size,anchor){
           icon.scaledSize = size;
@@ -189,14 +191,14 @@
         } 
 
         $.each( vehicle_theft_date_data, function( i, data){
-          var loc  = heatmapData_all[i];
-          var time = data[DATE_DATA.TIME];
-          var isAM = data[DATE_DATA.ISAM];
-          var date = data[DATE_DATA.DATE];
-          var day  = data[DATE_DATA.DAY];
-          var address   = data[DATE_DATA.ADDR];
-          var description = data[DATE_DATA.DESC];
-          var content = "<div class='infowindow'>"+
+          let loc  = heatmapData_all[i];
+          let time = data[DATE_DATA.TIME];
+          let isAM = data[DATE_DATA.ISAM];
+          let date = data[DATE_DATA.DATE];
+          let day  = data[DATE_DATA.DAY];
+          let address   = data[DATE_DATA.ADDR];
+          let description = data[DATE_DATA.DESC];
+          let content = "<div class='infowindow'>"+
                             "<h3>"+description+"</h3>"+
                             "<div><span>address:</span> "+address+"</div>"+
                             "<div><span>date: </span> "+date+" "+day+" "+time+" "+isAM+"</div>"+
@@ -317,7 +319,7 @@
         toggleMarkers(district_markers);
       }
      
-      function centerChangedEventHandler() {
+      function centerChangedEventHandler(map) {
         if (allowedBounds.contains(map.getCenter())) {
           // still within valid bounds, so save the last valid position
           lastValidCenter = map.getCenter();
@@ -327,7 +329,7 @@
         }
         }
 
-      function zoomChangeEventHandler() {
+      function zoomChangeEventHandler(map) {
           var zoomLevel = map.getZoom();
           var legend = $('#legend');
           $('#zoom_level').text('Zoom Level: ' + zoomLevel);
@@ -369,27 +371,29 @@
         }
 
       function setUpLegend(){
-        var legend = document.getElementById('legend');
-        var container = document.createElement('div');
+        let legend = document.getElementById('legend');
+        let container = document.createElement('div');
         container.innerHTML = "<div><h3>Interactive Legend</h3><div>";
         container.className = 'bio-window slide';
         container.id = 'inner_legend';
-        $.each(marker_icons, function(i,marker){
-          var name = marker.name;
-          var icon = marker.icon;
-          var inactive_icon = marker.inactive_icon;
-          var symbolDiv = document.createElement('div');
-          var image = document.createElement('img');
+        marker_icons.forEach( 
+          (marker,i) => {
+            var name = marker.name;
+            var icon = marker.icon;
+            var inactive_icon = marker.inactive_icon;
+            var symbolDiv = document.createElement('div');
+            var image = document.createElement('img');
 
-          unique_markers[name] = []; //setup uniquemarkers array of arrays
-          image.setAttribute('src',icon);
-          image.setAttribute('id','legend-icon'+i);
-          image.className = 'active-icon'; //all icons start active
-          image.name = name; //stored name in image to reference later when toggling unique marker visibility
-          symbolDiv.appendChild(image);
-          symbolDiv.innerHTML += name;
-          container.appendChild(symbolDiv);
-        });
+            unique_markers[name] = []; //setup uniquemarkers array of arrays
+            image.setAttribute('src',icon);
+            image.setAttribute('id','legend-icon'+i);
+            image.className = 'active-icon'; //all icons start active
+            image.name = name; //stored name in image to reference later when toggling unique marker visibility
+            symbolDiv.appendChild(image);
+            symbolDiv.innerHTML += name;
+            container.appendChild(symbolDiv);
+          }
+        );
         legend.appendChild(container);
         legend.innerHTML += "<a id='legend_arrow' class='arrow sprite-up-arrow' href='javascript:void(0)'></a>";
         $('#legend_arrow').click((e) => {
@@ -397,7 +401,8 @@
           $('#inner_legend').slideToggle("linear",updateArrow);
         });
 
-        $.each(marker_icons,function(i,marker){
+        marker_icons.forEach(
+          (marker,i) => {
           let icon = marker.icon;
           let inactive_icon = marker.inactive_icon;
           $('#legend-icon'+i).click((e) => {
@@ -406,8 +411,7 @@
               target.attr('src',icon);
               target.toggleClass("active-icon inactive-icon");
               setMarkersVisible(unique_markers[marker.name],true);
-            }
-            else{  
+            } else{  
               target.attr('src',inactive_icon);
               target.toggleClass("active-icon inactive-icon");
               setMarkersVisible(unique_markers[marker.name],false);
@@ -425,7 +429,6 @@
           streetViewControl: false,
           mapTypeId: google.maps.MapTypeId.ROAD
         };
-
         map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
         map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('panel'));
         map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
@@ -433,8 +436,9 @@
         
         $('#zoom_level').text('Zoom Level: ' + curZoomLevel);
         lastValidCenter = map.getCenter();
-        google.maps.event.addListener(map, 'center_changed', centerChangedEventHandler);
-        google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler);
+        google.maps.event.addListener(map, 'center_changed', () => {centerChangedEventHandler(map)});
+        google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler.bind(this,map));
+        return map;
       }
 
       $.when(
@@ -456,10 +460,10 @@
 
       ).then(function() {//consider adding on fail or on progress function handling
         // All is ready now
-        initialize();
-        addDistrictData();
+        let map = initialize();
+        addDistrictData(map);
         initializeHeatMapArray();
         addHeatMapData();
         setUpLegend();
-        addUniqueData();
+        addUniqueData(map);
       });
