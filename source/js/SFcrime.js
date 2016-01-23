@@ -392,25 +392,24 @@
         });
         legend.appendChild(container);
         legend.innerHTML += "<a id='legend_arrow' class='arrow sprite-up-arrow' href='javascript:void(0)'></a>";
-        $('#legend_arrow').click(function(){
-          var self = $(this);
-          var updateArrow = function(){self.toggleClass("sprite-up-arrow sprite-down-arrow");};
-          $('#inner_legend').slideToggle('linear',updateArrow);
+        $('#legend_arrow').click((e) => {
+          let updateArrow = () => {$(e.target).toggleClass("sprite-up-arrow sprite-down-arrow");};
+          $('#inner_legend').slideToggle("linear",updateArrow);
         });
 
         $.each(marker_icons,function(i,marker){
-          var icon = marker.icon;
-          var inactive_icon = marker.inactive_icon;
-          $('#legend-icon'+i).click(function(){
-            var self = $(this);
-            if(self.hasClass('inactive-icon')){
-              self.attr('src',icon);
-              self.toggleClass("active-icon inactive-icon");
+          let icon = marker.icon;
+          let inactive_icon = marker.inactive_icon;
+          $('#legend-icon'+i).click((e) => {
+            let target = $(e.target);
+            if(target.hasClass('inactive-icon')){
+              target.attr('src',icon);
+              target.toggleClass("active-icon inactive-icon");
               setMarkersVisible(unique_markers[marker.name],true);
             }
             else{  
-              self.attr('src',inactive_icon);
-              self.toggleClass("active-icon inactive-icon");
+              target.attr('src',inactive_icon);
+              target.toggleClass("active-icon inactive-icon");
               setMarkersVisible(unique_markers[marker.name],false);
             }
           });
@@ -418,8 +417,8 @@
       }
     
       function initialize() {
-        var sanFrancisco = new google.maps.LatLng(37.78763688993816, -122.42317685292451);
-        var mapOptions = {
+        let sanFrancisco = new google.maps.LatLng(37.78763688993816, -122.42317685292451);
+        let mapOptions = {
           center: sanFrancisco,
           zoom: curZoomLevel,
           minZoom: 12,

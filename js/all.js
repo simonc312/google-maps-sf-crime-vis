@@ -345,26 +345,25 @@ function setUpLegend() {
   });
   legend.appendChild(container);
   legend.innerHTML += "<a id='legend_arrow' class='arrow sprite-up-arrow' href='javascript:void(0)'></a>";
-  $('#legend_arrow').click(function () {
-    var self = $(this);
+  $('#legend_arrow').click(function (e) {
     var updateArrow = function updateArrow() {
-      self.toggleClass("sprite-up-arrow sprite-down-arrow");
+      $(e.target).toggleClass("sprite-up-arrow sprite-down-arrow");
     };
-    $('#inner_legend').slideToggle('linear', updateArrow);
+    $('#inner_legend').slideToggle("linear", updateArrow);
   });
 
   $.each(marker_icons, function (i, marker) {
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
-    $('#legend-icon' + i).click(function () {
-      var self = $(this);
-      if (self.hasClass('inactive-icon')) {
-        self.attr('src', icon);
-        self.toggleClass("active-icon inactive-icon");
+    $('#legend-icon' + i).click(function (e) {
+      var target = $(e.target);
+      if (target.hasClass('inactive-icon')) {
+        target.attr('src', icon);
+        target.toggleClass("active-icon inactive-icon");
         setMarkersVisible(unique_markers[marker.name], true);
       } else {
-        self.attr('src', inactive_icon);
-        self.toggleClass("active-icon inactive-icon");
+        target.attr('src', inactive_icon);
+        target.toggleClass("active-icon inactive-icon");
         setMarkersVisible(unique_markers[marker.name], false);
       }
     });
