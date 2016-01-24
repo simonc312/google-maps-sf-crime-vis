@@ -4511,10 +4511,10 @@ process.umask = function() { return 0; };
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 require('babel-polyfill');
+var addMarkers = require('./addMarkers.js');
+var markerIcon = require('./markerIcons.js');
 //constants for indices of vehicle_theft_data element fields
 var DATA = { 'LONGITUDE': 0, 'LATITUDE': 1, 'DISTRICT': 2 };
-//constants for indices of vehicle theft date data element fields
-var DATE_DATA = { 'DAY': 0, 'DATE': 1, 'TIME': 2, 'DESC': 3, 'ADDR': 4, 'ISAM': 5 };
 var DISTRICT_CIRCLE = { 'COLOR': { 'ON': 'red', 'OFF': 'transparent' }, 'OPACITY': { 'ON': 0.4, 'OFF': 0 } };
 var LEVEL = { 'DISTRICT': 13, 'HEAT_MAP': 14, 'UNIQUE_MARKER': 15 };
 var baseurl = '/google-maps-sf-crime-vis';
@@ -4524,28 +4524,20 @@ var vehicle_theft_district_data;
 var sf_district_bios;
 var lastValidCenter;
 var curZoomLevel = 13;
-var current_marker;
 var heatmap = []; //dictionary of heatmaps per district
 var heatmapData = []; //array of heat map pts grouped by district ex 'TARAVAL'
 var district_markers = [];
-var unique_markers = []; //array of marker objects grouped by description ex 'STOLEN VEHICLE'
 var gradients = [];
 var heatmap_all;
 var heatmapData_all = []; //used for toggling heatmap display mode from district view or individual markers
 var map;
 // bounds of the desired area
 var allowedBounds = new google.maps.LatLngBounds(new google.maps.LatLng(37.590059187414685, -122.63448208007815), new google.maps.LatLng(37.80174049420249, -122.3091720214844));
-var marker_icons = [{ 'name': "STOLEN VEHICLE", 'icon': baseurl + '/assets/sf_crime_icons/car.png', 'inactive_icon': baseurl + '/assets/sf_crime_icons/car-inactive.png' }, { 'name': "ATTEMPTED STOLEN VEHICLE", 'icon': baseurl + '/assets/sf_crime_icons/car-attempted.png', 'inactive_icon': baseurl + '/assets/sf_crime_icons/car-inactive.png' }, { 'name': "STOLEN AND RECOVERED VEHICLE", 'icon': baseurl + '/assets/sf_crime_icons/car-recovered.png', 'inactive_icon': baseurl + '/assets/sf_crime_icons/car-inactive.png' }, { 'name': "STOLEN MOTORCYCLE", 'icon': baseurl + '/assets/sf_crime_icons/motorcycle2.png', 'inactive_icon': baseurl + '/assets/sf_crime_icons/motorcycle-inactive.png' }, { 'name': "STOLEN TRUCK", 'icon': baseurl + '/assets/sf_crime_icons/truck2.png', 'inactive_icon': baseurl + '/assets/sf_crime_icons/truck-inactive.png' }];
 
 //only one infowindow needed to avoid clutter
 var infowindow = new google.maps.InfoWindow({
   maxWidth: 340
 });
-
-google.maps.InfoWindow.prototype.isOpen = function () {
-  var map = infowindow.getMap();
-  return map !== null && typeof map !== "undefined";
-};
 
 //determine which style is active
 var isDay = true;
@@ -4660,86 +4652,6 @@ function getDistrictBio(district) {
   }
 }
 
-function getUniqueIcon(description) {
-  //apply array filter
-  for (var i = 0; i < marker_icons.length; i++) {
-    if (marker_icons[i].name === description) return marker_icons[i].icon;
-  }
-  return marker_icons[0].icon; //default stolen automobile icon
-}
-
-function addUniqueData(map) {
-  var normal_size = new google.maps.Size(28, 33);
-  var scaled_size = new google.maps.Size(32, 37);
-  var normal_anchor = new google.maps.Point(16, 33);
-  var scaled_anchor = new google.maps.Point(16, 37);
-
-  var updateIcon = function updateIcon(marker, icon, size, anchor) {
-    icon.scaledSize = size;
-    icon.size = size;
-    icon.anchor = anchor;
-    marker.setIcon(icon);
-  };
-
-  vehicle_theft_date_data.forEach(function (data, i) {
-    var loc = heatmapData_all[i];
-    var time = data[DATE_DATA.TIME];
-    var isAM = data[DATE_DATA.ISAM];
-    var date = data[DATE_DATA.DATE];
-    var day = data[DATE_DATA.DAY];
-    var address = data[DATE_DATA.ADDR];
-    var description = data[DATE_DATA.DESC];
-    var content = '<div class=\'infowindow\'>\n                      <h3>' + description + '</h3>\n                      <div><span>address:</span>' + address + '</div>\n                      <div><span>date: </span> ' + date + ' ' + day + ' ' + time + ' ' + isAM + '</div>\n                    </div>';
-
-    var marker_array = unique_markers[description];
-    if (marker_array == undefined) return false; //skip this datapoint because it has an abnormal description not handled by legend
-    var icon = {
-      url: getUniqueIcon(description),
-      size: normal_size,
-      scaledSize: normal_size,
-      origin: new google.maps.Point(0, 0),
-      anchor: normal_anchor
-    };
-    var marker = new google.maps.Marker({
-      position: loc,
-      map: map,
-      title: description,
-      icon: icon,
-      visible: false
-    });
-
-    marker_array.push(marker);
-    var activateIcon = function activateIcon() {
-      updateIcon(marker, icon, scaled_size, scaled_anchor);
-    };
-    var normalizeIcon = function normalizeIcon() {
-      updateIcon(marker, icon, normal_size, normal_anchor);
-    };
-    google.maps.event.addListener(marker, 'mouseover', activateIcon);
-
-    google.maps.event.addListener(marker, 'mouseout', function () {
-      if (current_marker != marker) normalizeIcon();
-    });
-
-    google.maps.event.addListener(marker, 'click', function () {
-      var is_next_marker = current_marker != marker;
-      if (infowindow.isOpen()) {
-        google.maps.event.trigger(infowindow, 'closeclick'); //we always want to close infowindow on second click and reset
-      }
-      if (is_next_marker) {
-        current_marker = marker;
-        infowindow.setContent(content);
-        infowindow.open(map, marker);
-        google.maps.event.addListenerOnce(infowindow, 'closeclick', function () {
-          normalizeIcon();
-          current_marker = undefined;
-          infowindow.close();
-        });
-      }
-    });
-  });
-};
-
 function getCircle(magnitude, fColor, fOpacity) {
   return {
     path: google.maps.SymbolPath.CIRCLE,
@@ -4749,7 +4661,7 @@ function getCircle(magnitude, fColor, fOpacity) {
     strokeColor: 'white',
     strokeWeight: 0
   };
-};
+}
 
 function setMarkersVisible(markers, state) {
   markers.forEach(function (marker) {
@@ -4779,7 +4691,7 @@ function toggleMarkers(markers) {
 
 function toggleUniqueMarkers(turnOn) {
   $('.active-icon').each(function (i, icon) {
-    setMarkersVisible(unique_markers[icon.name], turnOn);
+    setMarkersVisible(addMarkers.uniqueMarkers[icon.name], turnOn);
   });
 }
 
@@ -4839,14 +4751,13 @@ function setUpLegend() {
   container.innerHTML = "<div><h3>Interactive Legend</h3><div>";
   container.className = 'bio-window slide';
   container.id = 'inner_legend';
-  marker_icons.forEach(function (marker, i) {
+  markerIcon.icons.forEach(function (marker, i) {
     var name = marker.name;
     var icon = marker.icon;
-    var inactive_icon = marker.inactive_icon;
     var symbolDiv = document.createElement('div');
     var image = document.createElement('img');
 
-    unique_markers[name] = []; //setup uniquemarkers array of arrays
+    addMarkers.uniqueMarkers[name] = []; //setup uniquemarkers array of arrays
     image.setAttribute('src', icon);
     image.setAttribute('id', 'legend-icon' + i);
     image.className = 'active-icon'; //all icons start active
@@ -4864,7 +4775,7 @@ function setUpLegend() {
     $('#inner_legend').slideToggle("linear", updateArrow);
   });
   // after dynamic markers added to dom add click handlers
-  marker_icons.forEach(function (marker, i) {
+  markerIcon.icons.forEach(function (marker, i) {
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
     $('#legend-icon' + i).click(function (e) {
@@ -4872,7 +4783,7 @@ function setUpLegend() {
       var isActive = target.hasClass('inactive-icon');
       target.attr('src', isActive ? icon : inactive_icon);
       target.toggleClass("active-icon inactive-icon");
-      setMarkersVisible(unique_markers[marker.name], isActive);
+      setMarkersVisible(addMarkers.uniqueMarkers[marker.name], isActive);
     });
   });
 }
@@ -4930,10 +4841,121 @@ $.getJSON(baseurl + "/assets/sf_district_bios.json", function (json) {
   initializeHeatMapArray();
   addHeatMapData();
   setUpLegend();
-  addUniqueData(map);
+  addMarkers.addUniqueData(map, infowindow, vehicle_theft_date_data, heatmapData_all);
 });
 
-},{"babel-polyfill":1}]},{},[191])
+},{"./addMarkers.js":192,"./markerIcons.js":193,"babel-polyfill":1}],192:[function(require,module,exports){
+'use strict';
+
+var markerIcon = require('./markerIcons.js');
+
+var unique_markers = []; //array of marker objects grouped by description ex 'STOLEN VEHICLE'
+
+function addUniqueData(map, infowindow, jsonData, heatmapData) {
+  //constants for indices of vehicle theft date data element fields
+  var DATE_DATA = { 'DAY': 0, 'DATE': 1, 'TIME': 2, 'DESC': 3, 'ADDR': 4, 'ISAM': 5 };
+  var normal_size = new google.maps.Size(28, 33);
+  var scaled_size = new google.maps.Size(32, 37);
+  var normal_anchor = new google.maps.Point(16, 33);
+  var scaled_anchor = new google.maps.Point(16, 37);
+
+  var current_marker = undefined;
+
+  google.maps.InfoWindow.prototype.isOpen = function () {
+    var map = infowindow.getMap();
+    return map !== null && typeof map !== "undefined";
+  };
+
+  var updateIcon = function updateIcon(marker, icon, size, anchor) {
+    icon.scaledSize = size;
+    icon.size = size;
+    icon.anchor = anchor;
+    marker.setIcon(icon);
+  };
+
+  jsonData.forEach(function (data, i) {
+    var loc = heatmapData[i];
+    var time = data[DATE_DATA.TIME];
+    var isAM = data[DATE_DATA.ISAM];
+    var date = data[DATE_DATA.DATE];
+    var day = data[DATE_DATA.DAY];
+    var address = data[DATE_DATA.ADDR];
+    var description = data[DATE_DATA.DESC];
+    var content = '<div class=\'infowindow\'>\n                      <h3>' + description + '</h3>\n                      <div><span>address:</span>' + address + '</div>\n                      <div><span>date: </span> ' + date + ' ' + day + ' ' + time + ' ' + isAM + '</div>\n                    </div>';
+
+    var marker_array = unique_markers[description];
+    if (marker_array == undefined) return false; //skip this datapoint because it has an abnormal description not handled by legend
+    var icon = {
+      url: markerIcon.getUniqueIcon(description),
+      size: normal_size,
+      scaledSize: normal_size,
+      origin: new google.maps.Point(0, 0),
+      anchor: normal_anchor
+    };
+    var marker = new google.maps.Marker({
+      position: loc,
+      map: map,
+      title: description,
+      icon: icon,
+      visible: false
+    });
+
+    marker_array.push(marker);
+    var scaleIcon = function scaleIcon() {
+      updateIcon(marker, icon, scaled_size, scaled_anchor);
+    };
+    var normalizeIcon = function normalizeIcon() {
+      updateIcon(marker, icon, normal_size, normal_anchor);
+    };
+    google.maps.event.addListener(marker, 'mouseover', scaleIcon);
+
+    google.maps.event.addListener(marker, 'mouseout', function () {
+      if (current_marker != marker) normalizeIcon();
+    });
+
+    google.maps.event.addListener(marker, 'click', function () {
+      var is_next_marker = current_marker != marker;
+      if (infowindow.isOpen()) {
+        google.maps.event.trigger(infowindow, 'closeclick'); //we always want to close infowindow on second click and reset
+      }
+      if (is_next_marker) {
+        current_marker = marker;
+        infowindow.setContent(content);
+        infowindow.open(map, marker);
+        google.maps.event.addListenerOnce(infowindow, 'closeclick', function () {
+          normalizeIcon();
+          current_marker = undefined;
+          infowindow.close();
+        });
+      }
+    });
+  });
+};
+
+module.exports = {
+  uniqueMarkers: unique_markers,
+  addUniqueData: addUniqueData
+};
+
+},{"./markerIcons.js":193}],193:[function(require,module,exports){
+'use strict';
+
+var baseurl = '/google-maps-sf-crime-vis/assets/sf_crime_icons/';
+var icons = [{ 'name': "STOLEN VEHICLE", 'icon': baseurl + '/car.png', 'inactive_icon': baseurl + 'car-inactive.png' }, { 'name': "ATTEMPTED STOLEN VEHICLE", 'icon': baseurl + 'car-attempted.png', 'inactive_icon': baseurl + 'car-inactive.png' }, { 'name': "STOLEN AND RECOVERED VEHICLE", 'icon': baseurl + 'car-recovered.png', 'inactive_icon': baseurl + 'car-inactive.png' }, { 'name': "STOLEN MOTORCYCLE", 'icon': baseurl + 'motorcycle2.png', 'inactive_icon': baseurl + 'motorcycle-inactive.png' }, { 'name': "STOLEN TRUCK", 'icon': baseurl + 'truck2.png', 'inactive_icon': baseurl + 'truck-inactive.png' }];
+
+function getUniqueIcon(description) {
+  var foundIcon = icons.find(function (marker) {
+    return marker.name === description;
+  });
+  return foundIcon.icon || icons[0].icon; //default stolen automobile icon
+}
+
+module.exports = {
+  icons: icons,
+  getUniqueIcon: getUniqueIcon
+};
+
+},{}]},{},[191])
 
 
 //# sourceMappingURL=build.js.map
