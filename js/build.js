@@ -4525,7 +4525,7 @@ var sf_district_bios;
 var lastValidCenter;
 var curZoomLevel = 13;
 var current_marker;
-var heatmap = {}; //dictionary of heatmaps per district
+var heatmap = []; //dictionary of heatmaps per district
 var heatmapData = []; //array of heat map pts grouped by district ex 'TARAVAL'
 var district_markers = [];
 var unique_markers = []; //array of marker objects grouped by description ex 'STOLEN VEHICLE'
@@ -4609,7 +4609,7 @@ function initializeHeatMapArray() {
 }
 
 function addHeatMapData() {
-  $.each(vehicle_theft_data, function (i, data) {
+  vehicle_theft_data.forEach(function (data) {
     var lat = data[DATA.LATITUDE];
     var lng = data[DATA.LONGITUDE];
     var district = data[DATA.DISTRICT];
@@ -4618,7 +4618,7 @@ function addHeatMapData() {
     heatmapData_all.push(location);
   });
 
-  $.each(heatmap, function (i, district) {
+  heatmap.forEach(function (district, i) {
     heatmap[i] = new google.maps.visualization.HeatmapLayer({
       data: heatmapData[district],
       gradient: gradients[i]
@@ -4639,15 +4639,15 @@ function getDistrictBio(district) {
     }
   });
 
-  if (foundDistrict !== undefined) {
+  if (foundDistrict) {
     var _ret = function () {
       var content = document.createElement('div');
       content.className = "bio-window min-width";
       content.innerHTML = '<h3>' + district + ' District Bio<h3>';
-      foundDistrict.full_name.forEach(function (name, index) {
+      foundDistrict.neighborhoods.forEach(function (neighborhood) {
         var innerDiv = document.createElement('div');
         innerDiv.className = "border-row";
-        innerDiv.innerHTML = '<h4 class="spacing">' + name + '</h4>\n                              <div><p>' + foundDistrict.description[index] + '</p></div>\n                              <a href="' + foundDistrict.url[index] + '" target="_blank">Read more</a>';
+        innerDiv.innerHTML = '<h4 class="spacing">' + neighborhood.name + '</h4>\n                              <div><p>' + neighborhood.description + '</p></div>\n                              <a href="' + neighborhood.url + '" target="_blank">Read more</a>';
 
         content.appendChild(innerDiv);
       });
@@ -4752,7 +4752,7 @@ function getCircle(magnitude, fColor, fOpacity) {
 };
 
 function setMarkersVisible(markers, state) {
-  $.each(markers, function (i, marker) {
+  markers.forEach(function (marker) {
     marker.setVisible(state);
   });
 }
@@ -4781,15 +4781,9 @@ function toggleMarkers(markers) {
 }
 
 function toggleUniqueMarkers(turnOn) {
-  if (turnOn) {
-    $('.active-icon').each(function () {
-      setMarkersVisible(unique_markers[this.name], true);
-    });
-  } else {
-    $('.active-icon').each(function () {
-      setMarkersVisible(unique_markers[this.name], false);
-    });
-  }
+  $('.active-icon').each(function (i, icon) {
+    setMarkersVisible(unique_markers[icon.name], turnOn);
+  });
 }
 
 function toggleDistrictMarkers() {
@@ -4809,7 +4803,7 @@ function centerChangedEventHandler(map) {
 function zoomChangeEventHandler(map) {
   var zoomLevel = map.getZoom();
   var legend = $('#legend');
-  $('#zoom_level').text('Zoom Level: ' + zoomLevel);
+  setZoomLevel(zoomLevel);
 
   //conditions to turn on district view
   if (zoomLevel <= LEVEL.DISTRICT) {
@@ -4872,23 +4866,22 @@ function setUpLegend() {
     };
     $('#inner_legend').slideToggle("linear", updateArrow);
   });
-
+  // after dynamic markers added to dom add click handlers
   marker_icons.forEach(function (marker, i) {
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
     $('#legend-icon' + i).click(function (e) {
       var target = $(e.target);
-      if (target.hasClass('inactive-icon')) {
-        target.attr('src', icon);
-        target.toggleClass("active-icon inactive-icon");
-        setMarkersVisible(unique_markers[marker.name], true);
-      } else {
-        target.attr('src', inactive_icon);
-        target.toggleClass("active-icon inactive-icon");
-        setMarkersVisible(unique_markers[marker.name], false);
-      }
+      var isActive = target.hasClass('inactive-icon');
+      target.attr('src', isActive ? icon : inactive_icon);
+      target.toggleClass("active-icon inactive-icon");
+      setMarkersVisible(unique_markers[marker.name], isActive);
     });
   });
+}
+
+function setZoomLevel(level) {
+  $('#zoom_level').text('Zoom Level: ' + level);
 }
 
 function initialize() {
@@ -4905,12 +4898,16 @@ function initialize() {
   map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
   map.setOptions(dayStyles);
 
-  $('#zoom_level').text('Zoom Level: ' + curZoomLevel);
+  setZoomLevel(curZoomLevel);
   lastValidCenter = map.getCenter();
   google.maps.event.addListener(map, 'center_changed', function () {
     centerChangedEventHandler(map);
   });
   google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler.bind(this, map));
+
+  $('#toggle_heatmap_btn').click(toggleHeatmap.bind());
+  $('#toggle_map_style_btn').click(toggleMapStyle.bind());
+
   return map;
 }
 

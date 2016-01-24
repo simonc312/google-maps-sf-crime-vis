@@ -1,11 +1,11 @@
 require('babel-polyfill');
 //constants for indices of vehicle_theft_data element fields 
-var DATA = {'LONGITUDE':0,'LATITUDE':1,'DISTRICT':2};
+const DATA = {'LONGITUDE':0,'LATITUDE':1,'DISTRICT':2};
 //constants for indices of vehicle theft date data element fields
-var DATE_DATA = {'DAY':0,'DATE':1,'TIME':2,'DESC':3,'ADDR':4,'ISAM':5};
-var DISTRICT_CIRCLE = {'COLOR': {'ON':'red','OFF':'transparent'},'OPACITY': {'ON':0.4,'OFF':0}};
-var LEVEL = {'DISTRICT':13,'HEAT_MAP':14,'UNIQUE_MARKER':15}
-var baseurl = '/google-maps-sf-crime-vis';
+const DATE_DATA = {'DAY':0,'DATE':1,'TIME':2,'DESC':3,'ADDR':4,'ISAM':5};
+const DISTRICT_CIRCLE = {'COLOR': {'ON':'red','OFF':'transparent'},'OPACITY': {'ON':0.4,'OFF':0}};
+const LEVEL = {'DISTRICT':13,'HEAT_MAP':14,'UNIQUE_MARKER':15}
+const baseurl = '/google-maps-sf-crime-vis';
 var vehicle_theft_data;
 var vehicle_theft_date_data;
 var vehicle_theft_district_data;
@@ -13,7 +13,7 @@ var sf_district_bios;
 var lastValidCenter;
 var curZoomLevel = 13;
 var current_marker;
-var heatmap = {}; //dictionary of heatmaps per district
+var heatmap = []; //dictionary of heatmaps per district
 var heatmapData = []; //array of heat map pts grouped by district ex 'TARAVAL'
 var district_markers = [];
 var unique_markers = []; //array of marker objects grouped by description ex 'STOLEN VEHICLE'
@@ -22,11 +22,11 @@ var heatmap_all;
 var heatmapData_all = []; //used for toggling heatmap display mode from district view or individual markers
 var map;
 // bounds of the desired area
-var allowedBounds = new google.maps.LatLngBounds(
+const allowedBounds = new google.maps.LatLngBounds(
     new google.maps.LatLng(37.590059187414685, -122.63448208007815),
     new google.maps.LatLng(37.80174049420249, -122.3091720214844)
 );
-var marker_icons = [ {'name': "STOLEN VEHICLE", 'icon': baseurl+'/assets/sf_crime_icons/car.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
+const marker_icons = [ {'name': "STOLEN VEHICLE", 'icon': baseurl+'/assets/sf_crime_icons/car.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
                      {'name': "ATTEMPTED STOLEN VEHICLE", 'icon': baseurl+'/assets/sf_crime_icons/car-attempted.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
                      {'name': "STOLEN AND RECOVERED VEHICLE", 'icon':  baseurl+'/assets/sf_crime_icons/car-recovered.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/car-inactive.png'},
                      {'name': "STOLEN MOTORCYCLE", 'icon': baseurl+'/assets/sf_crime_icons/motorcycle2.png', 'inactive_icon':baseurl+'/assets/sf_crime_icons/motorcycle-inactive.png'},
@@ -123,7 +123,7 @@ function initializeHeatMapArray(){
 }
 
 function addHeatMapData(){
-  $.each( vehicle_theft_data, function(i,data) {
+  vehicle_theft_data.forEach( (data) =>{
       var lat = data[DATA.LATITUDE];
       var lng = data[DATA.LONGITUDE];
       var district = data[DATA.DISTRICT];
@@ -132,13 +132,13 @@ function addHeatMapData(){
       heatmapData_all.push(location);
   });
 
-  $.each( heatmap, function(i, district){
+  heatmap.forEach( (district,i) => {
     heatmap[i] = new google.maps.visualization.HeatmapLayer({
       data: heatmapData[district],
       gradient: gradients[i]
     });
     heatmap[i].setMap(null);
-    });
+  });
 
   heatmap_all = new google.maps.visualization.HeatmapLayer({
       data: heatmapData_all
@@ -154,16 +154,16 @@ function getDistrictBio(district){
     }
   });
 
-  if( foundDistrict !== undefined){
+  if(foundDistrict){
     let content = document.createElement('div');
       content.className = "bio-window min-width";
       content.innerHTML = `<h3>${district} District Bio<h3>`;
-      foundDistrict.full_name.forEach((name,index) => {
+      foundDistrict.neighborhoods.forEach((neighborhood) => {
         let innerDiv = document.createElement('div');
         innerDiv.className = "border-row";
-        innerDiv.innerHTML =  `<h4 class="spacing">${name}</h4>
-                              <div><p>${foundDistrict.description[index]}</p></div>
-                              <a href="${foundDistrict.url[index]}" target="_blank">Read more</a>`;
+        innerDiv.innerHTML =  `<h4 class="spacing">${neighborhood.name}</h4>
+                              <div><p>${neighborhood.description}</p></div>
+                              <a href="${neighborhood.url}" target="_blank">Read more</a>`;
                               
         content.appendChild(innerDiv);
       });
@@ -269,7 +269,7 @@ function getCircle(magnitude,fColor,fOpacity) {
 };
 
 function setMarkersVisible(markers,state){
-   $.each(markers,function(i,marker){
+   markers.forEach( (marker) => {
       marker.setVisible(state);
     });
 }
@@ -307,16 +307,9 @@ function toggleMarkers(markers){
 }
 
 function toggleUniqueMarkers(turnOn){
-  if(turnOn){
-    $('.active-icon').each(function(){
-      setMarkersVisible(unique_markers[this.name],true);
+    $('.active-icon').each(function(i,icon){
+      setMarkersVisible(unique_markers[icon.name],turnOn);
     });
-  }
-  else{
-     $('.active-icon').each(function(){
-      setMarkersVisible(unique_markers[this.name],false);
-    });
-  }
 }
 
 function toggleDistrictMarkers(){
@@ -336,7 +329,7 @@ function centerChangedEventHandler(map) {
 function zoomChangeEventHandler(map) {
     var zoomLevel = map.getZoom();
     var legend = $('#legend');
-    $('#zoom_level').text('Zoom Level: ' + zoomLevel);
+    setZoomLevel(zoomLevel);
 
     //conditions to turn on district view
     if(zoomLevel <= LEVEL.DISTRICT){
@@ -404,24 +397,23 @@ function setUpLegend(){
     let updateArrow = () => {$(e.target).toggleClass("sprite-up-arrow sprite-down-arrow");};
     $('#inner_legend').slideToggle("linear",updateArrow);
   });
-
+  // after dynamic markers added to dom add click handlers 
   marker_icons.forEach(
     (marker,i) => {
     let icon = marker.icon;
     let inactive_icon = marker.inactive_icon;
     $('#legend-icon'+i).click((e) => {
       let target = $(e.target);
-      if(target.hasClass('inactive-icon')){
-        target.attr('src',icon);
-        target.toggleClass("active-icon inactive-icon");
-        setMarkersVisible(unique_markers[marker.name],true);
-      } else{  
-        target.attr('src',inactive_icon);
-        target.toggleClass("active-icon inactive-icon");
-        setMarkersVisible(unique_markers[marker.name],false);
-      }
+      let isActive = target.hasClass('inactive-icon'); 
+      target.attr('src',isActive ? icon : inactive_icon);
+      target.toggleClass("active-icon inactive-icon");
+      setMarkersVisible(unique_markers[marker.name],isActive);
     });
   });
+}
+
+function setZoomLevel(level){
+  $('#zoom_level').text(`Zoom Level: ${level}`);
 }
 
 function initialize() {
@@ -438,10 +430,14 @@ function initialize() {
   map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
   map.setOptions(dayStyles);
   
-  $('#zoom_level').text('Zoom Level: ' + curZoomLevel);
+  setZoomLevel(curZoomLevel);
   lastValidCenter = map.getCenter();
   google.maps.event.addListener(map, 'center_changed', () => {centerChangedEventHandler(map)});
   google.maps.event.addListener(map, 'zoom_changed', zoomChangeEventHandler.bind(this,map));
+
+  $('#toggle_heatmap_btn').click(toggleHeatmap.bind());
+  $('#toggle_map_style_btn').click(toggleMapStyle.bind());
+  
   return map;
 }
 
