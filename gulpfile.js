@@ -4,7 +4,7 @@ var babel = require("gulp-babel");
 var concat = require("gulp-concat");
 
 var path = {
-  js: "source/js/*.js",
+  js: ["source/js/polyfill.min.js","source/js/SFcrime.js"],
   //css: "source/css/*.css"
 };
 

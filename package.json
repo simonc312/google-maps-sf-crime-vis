@@ -27,5 +27,7 @@
     "gulp-concat": "^2.6.0",
     "gulp-sourcemaps": "^1.6.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "babel-polyfill": "^6.3.14"
+  }
 }
