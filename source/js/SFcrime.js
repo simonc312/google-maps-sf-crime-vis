@@ -1,4 +1,4 @@
-
+require('babel-polyfill');
 //constants for indices of vehicle_theft_data element fields 
 var DATA = {'LONGITUDE':0,'LATITUDE':1,'DISTRICT':2};
 //constants for indices of vehicle theft date data element fields

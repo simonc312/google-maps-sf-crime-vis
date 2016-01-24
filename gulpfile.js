@@ -1,10 +1,13 @@
 var gulp = require("gulp");
 var sourcemaps = require("gulp-sourcemaps");
-var babel = require("gulp-babel");
-var concat = require("gulp-concat");
+var source = require('vinyl-source-stream');
+var buffer = require('vinyl-buffer');
+var browserify = require('browserify');
+var watchify = require('watchify');
+var babel = require('babelify');
 
 var path = {
-  js: ["source/js/polyfill.min.js","source/js/SFcrime.js"],
+  entry_js: ["source/js/SFcrime.js"],
   //css: "source/css/*.css"
 };
 
@@ -13,17 +16,34 @@ var destPath = {
   //css: "css"
 }
 
-gulp.task('es2015-to-js', function () {
-  return gulp.src(path.js)
-    .pipe(sourcemaps.init())
-    .pipe(babel())
-    .pipe(concat("all.js"))
-    .pipe(sourcemaps.write("."))
-    .pipe(gulp.dest(destPath.js));
-});
+function compile(watch) {
+  var bundler = watchify(browserify(path.entry_js, { debug: true }).transform(babel));
 
-gulp.task('watch', function() {
-  gulp.watch(path.js,['es2015-to-js']);
-});
+  function rebundle() {
+    bundler.bundle()
+      .on('error', function(err) { console.error(err); this.emit('end'); })
+      .pipe(source('build.js'))
+      .pipe(buffer())
+      .pipe(sourcemaps.init({ loadMaps: true }))
+      .pipe(sourcemaps.write('./'))
+      .pipe(gulp.dest(destPath.js));
+  }
 
-gulp.task('default',['es2015-to-js', 'watch']);
+  if (watch) {
+    bundler.on('update', function() {
+      console.log('-> bundling...');
+      rebundle();
+      console.log('-> updated!');
+    });
+  }
+
+  rebundle();
+}
+
+function watch() {
+  return compile(true);
+};
+
+gulp.task('build', function() { return compile(); });
+gulp.task('watch', function() { return watch(); });
+gulp.task('default',['watch']);
