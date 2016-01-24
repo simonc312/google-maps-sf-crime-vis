@@ -4681,7 +4681,7 @@ function addUniqueData(map) {
     marker.setIcon(icon);
   };
 
-  $.each(vehicle_theft_date_data, function (i, data) {
+  vehicle_theft_date_data.forEach(function (data, i) {
     var loc = heatmapData_all[i];
     var time = data[DATE_DATA.TIME];
     var isAM = data[DATE_DATA.ISAM];
@@ -4689,7 +4689,7 @@ function addUniqueData(map) {
     var day = data[DATE_DATA.DAY];
     var address = data[DATE_DATA.ADDR];
     var description = data[DATE_DATA.DESC];
-    var content = "<div class='infowindow'>" + "<h3>" + description + "</h3>" + "<div><span>address:</span> " + address + "</div>" + "<div><span>date: </span> " + date + " " + day + " " + time + " " + isAM + "</div>" + "</div>";
+    var content = '<div class=\'infowindow\'>\n                      <h3>' + description + '</h3>\n                      <div><span>address:</span>' + address + '</div>\n                      <div><span>date: </span> ' + date + ' ' + day + ' ' + time + ' ' + isAM + '</div>\n                    </div>';
 
     var marker_array = unique_markers[description];
     if (marker_array == undefined) return false; //skip this datapoint because it has an abnormal description not handled by legend
@@ -4758,7 +4758,7 @@ function setMarkersVisible(markers, state) {
 }
 
 function setHeatmapVisible(state) {
-  if (state) heatmap_all.setMap(map);else heatmap_all.setMap(null);
+  heatmap_all.setMap(state ? map : null);
 }
 
 function toggleMapStyle() {
@@ -4767,13 +4767,10 @@ function toggleMapStyle() {
 }
 
 function toggleHeatmap() {
-  if (heatmap_all.getMap()) {
-    setHeatmapVisible(false);
-    setMarkersVisible(district_markers, true);
-  } else {
-    setMarkersVisible(district_markers, false);
-    setHeatmapVisible(true);
-  }
+  var showMarker = heatmap_all.getMap() ? true : false;
+  var showHeatmap = showMarker ? false : true;
+  setHeatmapVisible(showHeatmap);
+  setMarkersVisible(district_markers, showMarker);
 }
 
 function toggleMarkers(markers) {

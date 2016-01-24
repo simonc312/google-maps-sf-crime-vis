@@ -194,7 +194,7 @@ function addUniqueData(map){
     marker.setIcon(icon);
   } 
 
-  $.each( vehicle_theft_date_data, function( i, data){
+  vehicle_theft_date_data.forEach( (data,i) => {
     let loc  = heatmapData_all[i];
     let time = data[DATE_DATA.TIME];
     let isAM = data[DATE_DATA.ISAM];
@@ -202,11 +202,11 @@ function addUniqueData(map){
     let day  = data[DATE_DATA.DAY];
     let address   = data[DATE_DATA.ADDR];
     let description = data[DATE_DATA.DESC];
-    let content = "<div class='infowindow'>"+
-                      "<h3>"+description+"</h3>"+
-                      "<div><span>address:</span> "+address+"</div>"+
-                      "<div><span>date: </span> "+date+" "+day+" "+time+" "+isAM+"</div>"+
-                  "</div>"
+    let content = `<div class='infowindow'>
+                      <h3>${description}</h3>
+                      <div><span>address:</span>${address}</div>
+                      <div><span>date: </span> ${date} ${day} ${time} ${isAM}</div>
+                    </div>`
     
     var marker_array = unique_markers[description]
     if(marker_array == undefined)
@@ -275,10 +275,7 @@ function setMarkersVisible(markers,state){
 }
 
 function setHeatmapVisible(state){
-  if(state)
-    heatmap_all.setMap(map);
-  else
-    heatmap_all.setMap(null);
+  heatmap_all.setMap(state ? map : null);
 }
 
 function toggleMapStyle(){
@@ -290,13 +287,10 @@ function toggleMapStyle(){
 }
 
 function toggleHeatmap() {
-    if(heatmap_all.getMap()){
-      setHeatmapVisible(false);
-      setMarkersVisible(district_markers,true);
-    }else{
-      setMarkersVisible(district_markers,false);
-      setHeatmapVisible(true);
-    }
+  let showMarker = heatmap_all.getMap() ? true : false;
+  let showHeatmap = showMarker ? false : true;
+  setHeatmapVisible(showHeatmap);
+  setMarkersVisible(district_markers,showMarker);
 }
 
 function toggleMarkers(markers){
