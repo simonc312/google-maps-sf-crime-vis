@@ -4511,7 +4511,9 @@ process.umask = function() { return 0; };
 var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 require('babel-polyfill');
+var styles = require('./styles.js');
 var addMarkers = require('./addMarkers.js');
+var getCircle = require('./getCircle.js');
 var markerIcon = require('./markerIcons.js');
 //constants for indices of vehicle_theft_data element fields
 var DATA = { 'LONGITUDE': 0, 'LATITUDE': 1, 'DISTRICT': 2 };
@@ -4538,16 +4540,6 @@ var allowedBounds = new google.maps.LatLngBounds(new google.maps.LatLng(37.59005
 var infowindow = new google.maps.InfoWindow({
   maxWidth: 340
 });
-
-//determine which style is active
-var isDay = true;
-//lunar landing stype from snazzy maps
-var nightStyles = {
-  styles: [{ "stylers": [{ "hue": "#ff1a00" }, { "invert_lightness": true }, { "saturation": -100 }, { "lightness": 33 }, { "gamma": 0.5 }] }, { "featureType": "water", "elementType": "geometry", "stylers": [{ "color": "#2D333C" }] }]
-};
-//pale dawn style from snazzy maps
-var dayStyles = { styles: [{ "featureType": "water", "stylers": [{ "visibility": "on" }, { "color": "#acbcc9" }] }, { "featureType": "landscape", "stylers": [{ "color": "#f2e5d4" }] }, { "featureType": "road.highway", "elementType": "geometry", "stylers": [{ "color": "#c5c6c6" }] }, { "featureType": "road.arterial", "elementType": "geometry", "stylers": [{ "color": "#e4d7c6" }] }, { "featureType": "road.local", "elementType": "geometry", "stylers": [{ "color": "#fbfaf7" }] }, { "featureType": "poi.park", "elementType": "geometry", "stylers": [{ "color": "#c5dac6" }] }, { "featureType": "administrative", "stylers": [{ "visibility": "on" }, { "lightness": 33 }] }, { "featureType": "road" }, { "featureType": "poi.park", "elementType": "labels", "stylers": [{ "visibility": "on" }, { "lightness": 20 }] }, {}, { "featureType": "road", "stylers": [{ "lightness": 20 }] }]
-};
 
 function addDistrictData(map) {
   $.each(vehicle_theft_district_data.PdDistrict, function (i, district) {
@@ -4590,7 +4582,7 @@ function addDistrictData(map) {
       }
     });
   });
-};
+}
 
 function initializeHeatMapArray() {
   $.each(vehicle_theft_district_data.PdDistrict, function (i, district) {
@@ -4622,7 +4614,7 @@ function addHeatMapData() {
     data: heatmapData_all
   });
   heatmap_all.setMap(null);
-};
+}
 
 function getDistrictBio(district) {
   var foundDistrict = sf_district_bios.find(function (obj, i) {
@@ -4652,17 +4644,6 @@ function getDistrictBio(district) {
   }
 }
 
-function getCircle(magnitude, fColor, fOpacity) {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    fillColor: fColor,
-    fillOpacity: fOpacity,
-    scale: 0.25 * magnitude,
-    strokeColor: 'white',
-    strokeWeight: 0
-  };
-}
-
 function setMarkersVisible(markers, state) {
   markers.forEach(function (marker) {
     marker.setVisible(state);
@@ -4674,13 +4655,12 @@ function setHeatmapVisible(state) {
 }
 
 function toggleMapStyle() {
-  if (isDay) map.setOptions(nightStyles);else map.setOptions(dayStyles);
-  isDay = !isDay;
+  map.setOptions(styles.toggle());
 }
 
 function toggleHeatmap() {
-  var showMarker = heatmap_all.getMap() ? true : false;
-  var showHeatmap = showMarker ? false : true;
+  var showMarker = heatmap_all.getMap();
+  var showHeatmap = !showMarker;
   setHeatmapVisible(showHeatmap);
   setMarkersVisible(district_markers, showMarker);
 }
@@ -4735,7 +4715,7 @@ function zoomChangeEventHandler(map) {
     toggleUniqueMarkers(true);
     //turn on based on active legend symbols
   } else {
-      if (legend.hasClass('hide') == false) legend.addClass('hide');
+      if (legend.hasClass('hide') === false) legend.addClass('hide');
     }
 
   //infowindow only relevant when zoom is high enough to see symbols
@@ -4759,7 +4739,7 @@ function setUpLegend() {
 
     addMarkers.uniqueMarkers[name] = []; //setup uniquemarkers array of arrays
     image.setAttribute('src', icon);
-    image.setAttribute('id', 'legend-icon' + i);
+    image.setAttribute('id', 'legend_icon' + i);
     image.className = 'active-icon'; //all icons start active
     image.name = name; //stored name in image to reference later when toggling unique marker visibility
     symbolDiv.appendChild(image);
@@ -4778,7 +4758,7 @@ function setUpLegend() {
   markerIcon.icons.forEach(function (marker, i) {
     var icon = marker.icon;
     var inactive_icon = marker.inactive_icon;
-    $('#legend-icon' + i).click(function (e) {
+    $('#legend_icon' + i).click(function (e) {
       var target = $(e.target);
       var isActive = target.hasClass('inactive-icon');
       target.attr('src', isActive ? icon : inactive_icon);
@@ -4804,7 +4784,7 @@ function initialize() {
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('panel'));
   map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
-  map.setOptions(dayStyles);
+  map.setOptions(styles.default);
 
   setZoomLevel(curZoomLevel);
   lastValidCenter = map.getCenter();
@@ -4820,22 +4800,22 @@ function initialize() {
 }
 
 $.when(
-// Get all the data points for vehicle thefts
+//  Get all the data points for vehicle thefts
 $.getJSON(baseurl + '/assets/vehicle.theft.json', function (json) {
   vehicle_theft_data = json;
 }),
-// Get the PdDistrict mean locations and numbers
+//  Get the PdDistrict mean locations and numbers
 $.getJSON(baseurl + "/assets/vehicle.theft.location.json", function (json) {
   vehicle_theft_district_data = json;
 }), $.getJSON(baseurl + "/assets/vehicle.theft.date.json", function (json) {
   vehicle_theft_date_data = json;
 }),
-// Get text descriptions of districts and url links to read more
+//  Get text descriptions of districts and url links to read more
 $.getJSON(baseurl + "/assets/sf_district_bios.json", function (json) {
   sf_district_bios = json;
 })).then(function () {
-  //consider adding on fail or on progress function handling
-  // All is ready now
+  // consider adding on fail or on progress function handling
+  //  All is ready now
   var map = initialize();
   addDistrictData(map);
   initializeHeatMapArray();
@@ -4844,7 +4824,7 @@ $.getJSON(baseurl + "/assets/sf_district_bios.json", function (json) {
   addMarkers.addUniqueData(map, infowindow, vehicle_theft_date_data, heatmapData_all);
 });
 
-},{"./addMarkers.js":192,"./markerIcons.js":193,"babel-polyfill":1}],192:[function(require,module,exports){
+},{"./addMarkers.js":192,"./getCircle.js":193,"./markerIcons.js":194,"./styles.js":195,"babel-polyfill":1}],192:[function(require,module,exports){
 'use strict';
 
 var markerIcon = require('./markerIcons.js');
@@ -4937,7 +4917,23 @@ module.exports = {
   addUniqueData: addUniqueData
 };
 
-},{"./markerIcons.js":193}],193:[function(require,module,exports){
+},{"./markerIcons.js":194}],193:[function(require,module,exports){
+'use strict';
+
+function getCircle(magnitude, fColor, fOpacity) {
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    fillColor: fColor,
+    fillOpacity: fOpacity,
+    scale: 0.25 * magnitude,
+    strokeColor: 'white',
+    strokeWeight: 0
+  };
+}
+
+module.exports = getCircle;
+
+},{}],194:[function(require,module,exports){
 'use strict';
 
 var baseurl = '/google-maps-sf-crime-vis/assets/sf_crime_icons/';
@@ -4953,6 +4949,75 @@ function getUniqueIcon(description) {
 module.exports = {
   icons: icons,
   getUniqueIcon: getUniqueIcon
+};
+
+},{}],195:[function(require,module,exports){
+"use strict";
+
+//lunar landing stype from snazzy maps
+var nightStyle = {
+  styles: [{ "stylers": [{ "hue": "#ff1a00" }, { "invert_lightness": true }, { "saturation": -100 }, { "lightness": 33 }, { "gamma": 0.5 }]
+  }, {
+    "featureType": "water",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#2D333C" }]
+  }]
+};
+//pale dawn style from snazzy maps
+var dayStyle = {
+  styles: [{
+    "featureType": "water",
+    "stylers": [{ "visibility": "on" }, { "color": "#acbcc9" }]
+  }, {
+    "featureType": "landscape",
+    "stylers": [{ "color": "#f2e5d4" }]
+  }, {
+    "featureType": "road.highway",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#c5c6c6" }]
+  }, {
+    "featureType": "road.arterial",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#e4d7c6" }]
+  }, {
+    "featureType": "road.local",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#fbfaf7" }]
+  }, {
+    "featureType": "poi.park",
+    "elementType": "geometry",
+    "stylers": [{ "color": "#c5dac6" }]
+  }, {
+    "featureType": "administrative",
+    "stylers": [{ "visibility": "on" }, { "lightness": 33 }]
+  }, {
+    "featureType": "road"
+  }, {
+    "featureType": "poi.park",
+    "elementType": "labels",
+    "stylers": [{ "visibility": "on" }, { "lightness": 20 }]
+  }, {
+    "featureType": "road",
+    "stylers": [{ "lightness": 20 }]
+  }]
+};
+
+var currentStyle = dayStyle;
+
+function toggle() {
+  if (currentStyle === dayStyle) {
+    currentStyle = nightStyle;
+  } else {
+    currentStyle = dayStyle;
+  }
+  return currentStyle;
+}
+
+module.exports = {
+  day: dayStyle,
+  night: nightStyle,
+  toggle: toggle,
+  default: currentStyle
 };
 
 },{}]},{},[191])

@@ -1,5 +1,7 @@
 require('babel-polyfill');
+let styles = require('./styles.js');
 let addMarkers = require('./addMarkers.js');
+let getCircle = require('./getCircle.js');
 let markerIcon = require('./markerIcons.js');
 //constants for indices of vehicle_theft_data element fields 
 const DATA = {'LONGITUDE':0,'LATITUDE':1,'DISTRICT':2};
@@ -30,16 +32,6 @@ var infowindow = new google.maps.InfoWindow(
     {
       maxWidth: 340
     });
-
-//determine which style is active
-var isDay = true;
-//lunar landing stype from snazzy maps 
-var nightStyles = {
-  styles: [{"stylers":[{"hue":"#ff1a00"},{"invert_lightness":true},{"saturation":-100},{"lightness":33},{"gamma":0.5}]},{"featureType":"water","elementType":"geometry","stylers":[{"color":"#2D333C"}]}]
-};
-//pale dawn style from snazzy maps
-var dayStyles = {styles: [{"featureType":"water","stylers":[{"visibility":"on"},{"color":"#acbcc9"}]},{"featureType":"landscape","stylers":[{"color":"#f2e5d4"}]},{"featureType":"road.highway","elementType":"geometry","stylers":[{"color":"#c5c6c6"}]},{"featureType":"road.arterial","elementType":"geometry","stylers":[{"color":"#e4d7c6"}]},{"featureType":"road.local","elementType":"geometry","stylers":[{"color":"#fbfaf7"}]},{"featureType":"poi.park","elementType":"geometry","stylers":[{"color":"#c5dac6"}]},{"featureType":"administrative","stylers":[{"visibility":"on"},{"lightness":33}]},{"featureType":"road"},{"featureType":"poi.park","elementType":"labels","stylers":[{"visibility":"on"},{"lightness":20}]},{},{"featureType":"road","stylers":[{"lightness":20}]}]
-};
 
 function addDistrictData(map){
   $.each( vehicle_theft_district_data.PdDistrict, function( i, district){
@@ -85,7 +77,7 @@ function addDistrictData(map){
       });
     }
   );
- };
+}
 
 function initializeHeatMapArray(){
   $.each(vehicle_theft_district_data.PdDistrict, function(i, district){
@@ -133,7 +125,7 @@ function addHeatMapData(){
     });
     heatmap_all.setMap(null); 
   
-};
+}
 
 function getDistrictBio(district){
   let foundDistrict = sf_district_bios.find( (obj,i) => {
@@ -160,18 +152,7 @@ function getDistrictBio(district){
   
 }
 
-function getCircle(magnitude,fColor,fOpacity) {
-  return {
-    path: google.maps.SymbolPath.CIRCLE,
-    fillColor: fColor,
-    fillOpacity: fOpacity,
-    scale: 0.25*magnitude,
-    strokeColor: 'white',
-    strokeWeight: 0
-  };
-}
-
-function setMarkersVisible(markers,state){
+function setMarkersVisible(markers, state){
    markers.forEach( (marker) => {
       marker.setVisible(state);
     });
@@ -182,16 +163,12 @@ function setHeatmapVisible(state){
 }
 
 function toggleMapStyle(){
-  if(isDay)
-    map.setOptions(nightStyles);
-  else
-    map.setOptions(dayStyles);
-  isDay = !isDay;
+  map.setOptions(styles.toggle());
 }
 
 function toggleHeatmap() {
-  let showMarker = heatmap_all.getMap() ? true : false;
-  let showHeatmap = showMarker ? false : true;
+  let showMarker = heatmap_all.getMap();
+  let showHeatmap = !showMarker;
   setHeatmapVisible(showHeatmap);
   setMarkersVisible(district_markers,showMarker);
 }
@@ -204,7 +181,7 @@ function toggleMarkers(markers){
 }
 
 function toggleUniqueMarkers(turnOn){
-    $('.active-icon').each(function(i,icon){
+    $('.active-icon').each( (i,icon) => {
       setMarkersVisible(addMarkers.uniqueMarkers[icon.name],turnOn);
     });
 }
@@ -224,8 +201,8 @@ function centerChangedEventHandler(map) {
   }
 
 function zoomChangeEventHandler(map) {
-    var zoomLevel = map.getZoom();
-    var legend = $('#legend');
+    let zoomLevel = map.getZoom();
+    const legend = $('#legend');
     setZoomLevel(zoomLevel);
 
     //conditions to turn on district view
@@ -253,7 +230,7 @@ function zoomChangeEventHandler(map) {
       toggleUniqueMarkers(true);
       //turn on based on active legend symbols
     }else{
-      if(legend.hasClass('hide') == false)
+      if(legend.hasClass('hide') === false)
         legend.addClass('hide');
     }
 
@@ -279,7 +256,7 @@ function setUpLegend(){
 
       addMarkers.uniqueMarkers[name] = []; //setup uniquemarkers array of arrays
       image.setAttribute('src',icon);
-      image.setAttribute('id','legend-icon'+i);
+      image.setAttribute('id','legend_icon'+i);
       image.className = 'active-icon'; //all icons start active
       image.name = name; //stored name in image to reference later when toggling unique marker visibility
       symbolDiv.appendChild(image);
@@ -296,9 +273,9 @@ function setUpLegend(){
   // after dynamic markers added to dom add click handlers 
   markerIcon.icons.forEach(
     (marker,i) => {
-    let icon = marker.icon;
-    let inactive_icon = marker.inactive_icon;
-    $('#legend-icon'+i).click((e) => {
+    const icon = marker.icon;
+    const inactive_icon = marker.inactive_icon;
+    $('#legend_icon'+i).click((e) => {
       let target = $(e.target);
       let isActive = target.hasClass('inactive-icon'); 
       target.attr('src',isActive ? icon : inactive_icon);
@@ -324,7 +301,7 @@ function initialize() {
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   map.controls[google.maps.ControlPosition.RIGHT_TOP].push(document.getElementById('panel'));
   map.controls[google.maps.ControlPosition.LEFT_TOP].push(document.getElementById('zoom_level'));
-  map.setOptions(dayStyles);
+  map.setOptions(styles.default);
   
   setZoomLevel(curZoomLevel);
   lastValidCenter = map.getCenter();
@@ -338,28 +315,28 @@ function initialize() {
 }
 
 $.when(
-  // Get all the data points for vehicle thefts
+  //  Get all the data points for vehicle thefts
   $.getJSON(baseurl+'/assets/vehicle.theft.json', function(json) {
     vehicle_theft_data =  json;
   }),
-  // Get the PdDistrict mean locations and numbers
+  //  Get the PdDistrict mean locations and numbers
   $.getJSON(baseurl+"/assets/vehicle.theft.location.json", function(json) {
     vehicle_theft_district_data = json;
   }),
   $.getJSON(baseurl+"/assets/vehicle.theft.date.json", function(json) {
     vehicle_theft_date_data = json;
   }),
-  // Get text descriptions of districts and url links to read more
+  //  Get text descriptions of districts and url links to read more
   $.getJSON(baseurl+"/assets/sf_district_bios.json", function(json) {
     sf_district_bios = json;
   })
 
-).then(function() {//consider adding on fail or on progress function handling
-  // All is ready now
-  let map = initialize();
+).then(() => {// consider adding on fail or on progress function handling
+  //  All is ready now
+  const map = initialize();
   addDistrictData(map);
   initializeHeatMapArray();
   addHeatMapData();
   setUpLegend();
-  addMarkers.addUniqueData(map,infowindow,vehicle_theft_date_data,heatmapData_all);
+  addMarkers.addUniqueData(map, infowindow, vehicle_theft_date_data, heatmapData_all);
 });
