@@ -15,4 +15,4 @@ defaults:
       layout: "SFcrime"
       type: "pages"
 
-exclude: ['source','node_modules','gulp','package.json','gulpfile.js','.babelrc','Gemfile','Gemfile.lock']
+exclude: ['screenshots','source','node_modules','gulp','package.json','gulpfile.js','.babelrc','Gemfile','Gemfile.lock']
