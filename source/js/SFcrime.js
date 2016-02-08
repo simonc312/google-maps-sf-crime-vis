@@ -3,9 +3,9 @@ let styles = require('./styles.js');
 let addMarkers = require('./addMarkers.js');
 let getCircle = require('./getCircle.js');
 let markerIcon = require('./markerIcons.js');
+let heatmaps = require('./heatmaps.js');
 //constants for indices of vehicle_theft_data element fields 
 const DATA = {'LONGITUDE':0,'LATITUDE':1,'DISTRICT':2};
-const DISTRICT_CIRCLE = {'COLOR': {'ON':'red','OFF':'transparent'},'OPACITY': {'ON':0.4,'OFF':0}};
 const LEVEL = {'DISTRICT':13,'HEAT_MAP':14,'UNIQUE_MARKER':15}
 const baseurl = '/google-maps-sf-crime-vis';
 var vehicle_theft_data;
@@ -14,12 +14,7 @@ var vehicle_theft_district_data;
 var sf_district_bios;
 var lastValidCenter;
 var curZoomLevel = 13;
-var heatmap = []; //dictionary of heatmaps per district
-var heatmapData = []; //array of heat map pts grouped by district ex 'TARAVAL'
 var district_markers = [];
-var gradients = [];
-var heatmap_all;
-var heatmapData_all = []; //used for toggling heatmap display mode from district view or individual markers
 var map;
 // bounds of the desired area
 const allowedBounds = new google.maps.LatLngBounds(
@@ -42,7 +37,7 @@ function addDistrictData(map){
         map: map,
         title: district,
         animation: google.maps.Animation.DROP,
-        icon: getCircle(magnitude,DISTRICT_CIRCLE.COLOR.ON,DISTRICT_CIRCLE.OPACITY.ON),
+        icon: getCircle(magnitude,true),
         labelContent: "<div class='district_font_size'>"+district+"<div class='district_total'>"+magnitude+"</div></div>",
         labelAnchor: new google.maps.Point(50, 10),
         labelClass: "district_labels", 
@@ -60,16 +55,16 @@ function addDistrictData(map){
 
       google.maps.event.addListener(marker, 'click', function() {
         var district_bio = $('#district_bio');
-        if(heatmap[i].getMap() != null){
-          heatmap[i].setMap(null);
-          marker.setIcon(getCircle(magnitude,DISTRICT_CIRCLE.COLOR.ON,DISTRICT_CIRCLE.OPACITY.ON));
+        if(heatmaps.districtDict[i].getMap() != null){
+          heatmaps.districtDict[i].setMap(null);
+          marker.setIcon(getCircle(magnitude,true));
           var data = district_bio.data('current_district');
           if(data != undefined && data === district)
             district_bio.addClass('hide');
         }
         else{
-          marker.setIcon(getCircle(magnitude,DISTRICT_CIRCLE.COLOR.OFF,DISTRICT_CIRCLE.OPACITY.OFF));
-          heatmap[i].setMap(map);
+          marker.setIcon(getCircle(magnitude,false));
+          heatmaps.districtDict[i].setMap(map);
           district_bio.data('current_district',district);
           district_bio.html(getDistrictBio(district));
           district_bio.removeClass('hide');
@@ -81,49 +76,22 @@ function addDistrictData(map){
 
 function initializeHeatMapArray(){
   $.each(vehicle_theft_district_data.PdDistrict, function(i, district){
-    heatmapData[district] = [];
-    heatmap[i] = district;
-    gradients[i] =  [
-        'rgba(0, 255, 255, 0)',
-        'rgba(0, 255, 255, 1)',
-        'rgba(0, 191, 255, 1)',
-        'rgba(0, 127, 255, 1)',
-        'rgba(0, 63, 255, 1)',
-        'rgba(0, 0, 255, 1)',
-        'rgba(0, 0, 223, 1)',
-        'rgba(0, 0, 191, 1)',
-        'rgba(0, 0, 159, 1)',
-        'rgba(0, 0, 127, 1)',
-        'rgba(63, 0, 91, 1)',
-        'rgba(127, 0, 63, 1)',
-        'rgba(191, 0, 31, 1)',
-        'rgba(255, 0, 0, 1)',
-      ];
+    heatmaps.districtArray[district] = [];
+    heatmaps.districtDict[i] = district;
   });
 }
 
 function addHeatMapData(){
   vehicle_theft_data.forEach( (data) =>{
-      var lat = data[DATA.LATITUDE];
-      var lng = data[DATA.LONGITUDE];
-      var district = data[DATA.DISTRICT];
-      var location = new google.maps.LatLng(lat, lng); 
-      heatmapData[district].push(location);
-      heatmapData_all.push(location);
+      const lat = data[DATA.LATITUDE];
+      const lng = data[DATA.LONGITUDE];
+      const district = data[DATA.DISTRICT];
+      const location = new google.maps.LatLng(lat, lng); 
+      heatmaps.districtArray[district].push(location);
+      heatmaps.allArray.push(location);
   });
 
-  heatmap.forEach( (district,i) => {
-    heatmap[i] = new google.maps.visualization.HeatmapLayer({
-      data: heatmapData[district],
-      gradient: gradients[i]
-    });
-    heatmap[i].setMap(null);
-  });
-
-  heatmap_all = new google.maps.visualization.HeatmapLayer({
-      data: heatmapData_all
-    });
-    heatmap_all.setMap(null); 
+  heatmaps.finalizeMaps();
   
 }
 
@@ -159,7 +127,7 @@ function setMarkersVisible(markers, state){
 }
 
 function setHeatmapVisible(state){
-  heatmap_all.setMap(state ? map : null);
+  heatmaps.setVisible(state ? map : null);
 }
 
 function toggleMapStyle(){
@@ -167,7 +135,7 @@ function toggleMapStyle(){
 }
 
 function toggleHeatmap() {
-  let showMarker = heatmap_all.getMap();
+  let showMarker = heatmaps.isVisible();
   let showHeatmap = !showMarker;
   setHeatmapVisible(showHeatmap);
   setMarkersVisible(district_markers,showMarker);
@@ -208,7 +176,7 @@ function zoomChangeEventHandler(map) {
     //conditions to turn on district view
     if(zoomLevel <= LEVEL.DISTRICT){
       if(zoomLevel < curZoomLevel){
-        if(heatmap_all.getMap())
+        if(heatmaps.isVisible())
           toggleHeatmap(); //turn off
           toggleUniqueMarkers(false); //turn off
       } 
@@ -219,13 +187,13 @@ function zoomChangeEventHandler(map) {
     if(zoomLevel == LEVEL.HEAT_MAP){
       if(zoomLevel < curZoomLevel)
         toggleUniqueMarkers(false); //turn off
-      if(heatmap_all.getMap() == null) //if off turn on
+      if(!heatmaps.isVisible()) //if off turn on
         toggleHeatmap();
     }
     //conditions to turn on unique markers view
     if(zoomLevel >= LEVEL.UNIQUE_MARKER){
       legend.removeClass('hide');
-      if(heatmap_all.getMap()) //turn off heat map view
+      if(heatmaps.isVisible()) //turn off heat map view
         setHeatmapVisible(false);
       toggleUniqueMarkers(true);
       //turn on based on active legend symbols
@@ -338,5 +306,5 @@ $.when(
   initializeHeatMapArray();
   addHeatMapData();
   setUpLegend();
-  addMarkers.addUniqueData(map, infowindow, vehicle_theft_date_data, heatmapData_all);
+  addMarkers.addUniqueData(map, infowindow, vehicle_theft_date_data, heatmaps.allArray);
 });
