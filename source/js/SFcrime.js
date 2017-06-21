@@ -1,4 +1,5 @@
 require('babel-polyfill');
+require('./markerWithLabels.js');
 let styles = require('./styles.js');
 let addMarkers = require('./addMarkers.js');
 let getCircle = require('./getCircle.js');
@@ -32,6 +33,7 @@ function addDistrictData(map){
   $.each( vehicle_theft_district_data.PdDistrict, function( i, district){
       var loc = new google.maps.LatLng(vehicle_theft_district_data.Y[i], vehicle_theft_district_data.X[i]);
       var magnitude = vehicle_theft_district_data.Total[i];
+      //refactor using newer Google Maps API that includes marker with label content
       var marker = new MarkerWithLabel({
         position: loc,
         map: map,

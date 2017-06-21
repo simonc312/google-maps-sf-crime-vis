@@ -2,11 +2,13 @@
   "name": "google-maps-sf-crime-vis",
   "version": "1.0.0",
   "description": "visualization of dataset of vehichle thefts in sf 2014",
+  "private": true,
   "main": "js/index.js",
   "scripts": {
-    "start" : "npm run gulp & npm run serve",
-    "gulp" : "gulp",
-    "serve" : "jekyll serve",
+    "start": "npm run gulp & npm run serve",
+    "gulp": "gulp",
+    "serve": "jekyll serve",
+    "serve_fp": "bundle exec jekyll serve --force_polling",
     "test": "console.log('test')",
     "lint": "eslint source"
   },

@@ -22,7 +22,7 @@ function compile(watch) {
   var bundler = watchify(browserify(path.entry_js, { debug: true }).transform(babel));
 
   function rebundle() {
-    gulp.run(['lint']);
+    //gulp.run(['lint']);
     bundler.bundle()
       .on('error', function(err) { console.error(err); this.emit('end'); })
       .pipe(source('build.js'))
